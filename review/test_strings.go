@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -20,6 +21,7 @@ func main() {
 	TestStrConv()
 	fmt.Println(isPalindrome("ab_a"))
 
+	fmt.Println(sort.SearchInts([]int{1, 2, 3, 3, 3, 4, 5}, 3))
 }
 
 func TestStrings() {
