@@ -1,0 +1,13 @@
+{
+  "id": 1,
+  "titleEn": "Two Sum",
+  "titleCn": "两数之和",
+  "keywords": ["two sum", "两数之和", "indices of two numbers", "target", "数组中找出和为目标值"],
+  "solutions": {
+    "python": "class Solution:\n    def twoSum(self, nums: list[int], target: int) -> list[int]:\n        seen = {}\n        for i, x in enumerate(nums):\n            if target - x in seen:\n                return [seen[target - x], i]\n            seen[x] = i\n        return []",
+    "cpp": "class Solution {\npublic:\n    vector<int> twoSum(vector<int>& nums, int target) {\n        unordered_map<int, int> seen;\n        for (int i = 0; i < (int)nums.size(); ++i) {\n            int need = target - nums[i];\n            if (seen.count(need)) return {seen[need], i};\n            seen[nums[i]] = i;\n        }\n        return {};\n    }\n};",
+    "java": "class Solution {\n    public int[] twoSum(int[] nums, int target) {\n        Map<Integer, Integer> seen = new HashMap<>();\n        for (int i = 0; i < nums.length; i++) {\n            int need = target - nums[i];\n            if (seen.containsKey(need)) return new int[]{seen.get(need), i};\n            seen.put(nums[i], i);\n        }\n        return new int[]{};\n    }\n}",
+    "go": "func twoSum(nums []int, target int) []int {\n    seen := map[int]int{}\n    for i, x := range nums {\n        if j, ok := seen[target-x]; ok { return []int{j, i} }\n        seen[x] = i\n    }\n    return nil\n}"
+  },
+  "explanation": "哈希表一遍扫描：对每个元素记录其下标，若 target-当前值 已出现过则返回。时间 O(n)，空间 O(n)。"
+}

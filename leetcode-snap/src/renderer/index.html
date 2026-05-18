@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>LeetSnap</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; font-family: -apple-system, "PingFang SC", system-ui, sans-serif; background: #1a1d23; color: #e6e8eb; user-select: none; }
+  .titlebar { -webkit-app-region: drag; height: 36px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; background: #20242b; border-bottom: 0.5px solid #2c313a; }
+  .titlebar .left { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #9aa0a6; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; -webkit-app-region: no-drag; cursor: pointer; }
+  .dot.close { background: #ff5f56; }
+  .dot.min { background: #ffbd2e; }
+  .dot.max { background: #27c93f; }
+  .controls { -webkit-app-region: no-drag; display: flex; gap: 6px; }
+  .btn { padding: 4px 10px; font-size: 12px; background: #2c313a; color: #e6e8eb; border: 0.5px solid #3a404a; border-radius: 6px; cursor: pointer; }
+  .btn:hover { background: #353b46; }
+  .btn.primary { background: #4f8cff; border-color: #4f8cff; }
+  body, .scroll { user-select: text; }
+  .container { padding: 12px 14px 16px; height: calc(100vh - 36px); overflow-y: auto; }
+  .status { padding: 8px 12px; font-size: 12px; border-radius: 6px; background: #20242b; border: 0.5px solid #2c313a; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .status.capturing { color: #ffbd2e; }
+  .status.ocr { color: #4f8cff; }
+  .status.solving { color: #b388ff; }
+  .status.done { color: #27c93f; }
+  .status.error { color: #ff5f56; }
+  .spinner { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid currentColor; border-top-color: transparent; animation: spin 0.8s linear infinite; }
+  .status.done .spinner, .status.error .spinner { display: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .section { margin-bottom: 14px; }
+  .section h3 { margin: 0 0 8px; font-size: 12px; font-weight: 500; color: #9aa0a6; text-transform: uppercase; letter-spacing: 0.5px; }
+  .card { background: #20242b; border: 0.5px solid #2c313a; border-radius: 8px; padding: 10px 12px; font-size: 13px; line-height: 1.6; }
+  .card.preview img { max-width: 100%; border-radius: 4px; display: block; }
+  .ocr-text { font-family: ui-monospace, "SF Mono", monospace; font-size: 12px; color: #b8bcc4; max-height: 90px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
+  .title { font-weight: 500; font-size: 14px; color: #ffd54f; margin-bottom: 6px; }
+  .badge { display: inline-block; padding: 2px 7px; font-size: 11px; border-radius: 4px; margin-left: 6px; vertical-align: middle; }
+  .badge.local { background: #1e3a2c; color: #6dd897; }
+  .badge.llm { background: #2c2640; color: #b388ff; }
+  .badge.none { background: #3a2c2c; color: #ff8a80; }
+  pre.code { background: #11141a; border: 0.5px solid #2c313a; border-radius: 6px; padding: 10px 12px; font-family: ui-monospace, "SF Mono", monospace; font-size: 12px; line-height: 1.55; color: #d8dde5; overflow-x: auto; max-height: 380px; }
+  .tabs { display: flex; gap: 4px; margin-bottom: 8px; flex-wrap: wrap; }
+  .tab { padding: 5px 10px; background: #20242b; border: 0.5px solid #2c313a; border-radius: 5px; font-size: 12px; cursor: pointer; color: #b8bcc4; }
+  .tab.active { background: #4f8cff; color: #fff; border-color: #4f8cff; }
+  .tab:hover:not(.active) { background: #2c313a; }
+  .method-meta { display: flex; gap: 10px; align-items: center; font-size: 11px; color: #8b909a; margin-bottom: 8px; flex-wrap: wrap; }
+  .complexity { padding: 2px 7px; background: #2c2640; color: #b388ff; border-radius: 3px; font-family: ui-monospace, monospace; }
+  .method-explanation { font-size: 12px; color: #b8bcc4; margin-top: 8px; line-height: 1.6; }
+  .opacity-toast { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); padding: 14px 22px; background: rgba(0,0,0,0.78); color: #fff; border-radius: 10px; font-size: 14px; font-weight: 500; pointer-events: none; opacity: 0; transition: opacity 0.18s; z-index: 9999; min-width: 180px; text-align: center; }
+  .opacity-toast.show { opacity: 1; }
+  .opacity-bar { width: 140px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; margin: 8px auto 0; overflow: hidden; }
+  .opacity-bar-fill { height: 100%; background: #4f8cff; transition: width 0.18s; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .meta { font-size: 11px; color: #6c7280; }
+  .empty { text-align: center; color: #6c7280; padding: 40px 20px; font-size: 13px; }
+  .kbd { display: inline-block; padding: 1px 6px; background: #2c313a; border: 0.5px solid #3a404a; border-radius: 4px; font-family: ui-monospace, monospace; font-size: 11px; color: #e6e8eb; }
+</style>
+</head>
+<body>
+  <div class="titlebar">
+    <div class="left">
+      <span style="font-weight: 500; color: #4f8cff;">●</span>
+      <span>LeetSnap</span>
+      <span style="color: #6c7280;">— fn+F2 截图解题</span>
+    </div>
+    <div class="controls">
+      <button class="btn" id="btn-capture">立即截图</button>
+      <button class="btn" id="btn-settings">设置</button>
+      <button class="btn" id="btn-hide" title="隐藏窗口（数据保留）">隐藏</button>
+      <button class="btn" id="btn-close" title="关闭输出框">×</button>
+    </div>
+  </div>
+
+  <div class="container scroll">
+    <div class="status" id="status">
+      <span class="spinner"></span>
+      <span id="status-text">等待截图。按 <span class="kbd">fn</span> + <span class="kbd">F2</span> 启动，或点击右上角"立即截图"。</span>
+    </div>
+    <div id="perm-banner" style="display:none; padding:10px 12px; margin-bottom:12px; background:#3a2c2c; border:0.5px solid #ff5f56; border-radius:6px; font-size:12px; line-height:1.6;">
+      <div style="color:#ff8a80; margin-bottom:6px;"><b>需要屏幕录制权限</b></div>
+      <div style="color:#e6e8eb;">当前只能截到桌面壁纸，截不到其它 App。请到 <b>系统设置 → 隐私与安全性 → 屏幕录制</b> 勾选 <b>Electron</b>（或 LeetSnap）后<b>重启本应用</b>。</div>
+      <button class="btn primary" id="btn-open-prefs" style="margin-top:8px;">打开系统设置</button>
+    </div>
+
+    <div id="empty" class="empty">
+      还没有结果。<br>截图框选 LeetCode 题目区域后，AC 代码会出现在这里。
+    </div>
+
+    <div id="content" style="display:none;">
+      <div class="section" id="sec-preview" style="display:none;">
+        <h3>截图预览</h3>
+        <div class="card preview"><img id="preview-img" alt="screenshot preview"></div>
+      </div>
+
+      <div class="section" id="sec-ocr" style="display:none;">
+        <h3>OCR 识别文本</h3>
+        <div class="card"><div class="ocr-text" id="ocr-text"></div></div>
+      </div>
+
+      <div class="section" id="sec-result" style="display:none;">
+        <h3>题目识别 & AC 代码 <span id="badge"></span></h3>
+        <div class="card">
+          <div class="title" id="result-title"></div>
+          <div class="meta" id="result-meta"></div>
+          <div class="tabs" id="method-tabs"></div>
+          <div class="method-meta">
+            <span class="complexity" id="method-complexity"></span>
+          </div>
+          <pre class="code" id="result-code"></pre>
+          <div class="method-explanation" id="result-explanation"></div>
+          <div style="margin-top: 10px;" class="row">
+            <button class="btn primary" id="btn-copy">复制当前方法代码</button>
+            <button class="btn" id="btn-copy-all">复制全部方法</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="opacity-toast" id="opacity-toast">
+    <div id="opacity-text">透明度 100%</div>
+    <div class="opacity-bar"><div class="opacity-bar-fill" id="opacity-fill" style="width: 100%;"></div></div>
+  </div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const status = $('status');
+  const statusText = $('status-text');
+
+  function setStatus(phase, msg) {
+    status.className = 'status ' + (phase || '');
+    statusText.innerHTML = msg;
+    if (phase === 'error' && (String(msg).includes('权限') || String(msg).includes('文件过小') || String(msg).includes('Screen'))) {
+      $('perm-banner').style.display = 'block';
+    } else if (phase && phase !== 'error') {
+      $('perm-banner').style.display = 'none';
+    }
+  }
+
+  window.api.onStatus(({ phase, message }) => {
+    setStatus(phase, message);
+    if (phase === 'capturing' || phase === 'ocr') {
+      $('empty').style.display = 'none';
+      $('content').style.display = 'block';
+      if (phase === 'capturing') {
+        $('sec-preview').style.display = 'none';
+        $('sec-ocr').style.display = 'none';
+        $('sec-result').style.display = 'none';
+      }
+    }
+  });
+
+  window.api.onPreview((dataUrl) => {
+    $('preview-img').src = dataUrl;
+    $('sec-preview').style.display = 'block';
+    $('empty').style.display = 'none';
+    $('content').style.display = 'block';
+  });
+
+  window.api.onOcrText((text) => {
+    $('ocr-text').textContent = text || '(未识别到文字)';
+    $('sec-ocr').style.display = 'block';
+  });
+
+  window.api.onResult((res) => {
+    $('result-title').textContent = res.title || 'LeetCode 题解';
+    $('result-meta').textContent = `语言：${res.language || '-'}` + (res.matchScore ? `  ·  本地匹配分：${res.matchScore}` : '') + `  ·  共 ${(res.methods || []).length} 种解法`;
+    const badge = $('badge');
+    badge.className = 'badge ' + (res.engine || 'none');
+    badge.textContent = res.engine === 'local' ? '本地题库' : (res.engine === 'llm' ? 'LLM 在线' : '未匹配');
+
+    const methods = res.methods || [];
+    const tabs = $('method-tabs');
+    tabs.innerHTML = '';
+    let activeIdx = 0;
+
+    function renderMethod(idx) {
+      activeIdx = idx;
+      Array.from(tabs.children).forEach((el, i) => el.classList.toggle('active', i === idx));
+      const m = methods[idx];
+      if (!m) return;
+      $('method-complexity').textContent = m.complexity || '-';
+      $('result-code').textContent = m.code || '';
+      $('result-explanation').textContent = m.explanation || '';
+    }
+
+    methods.forEach((m, i) => {
+      const t = document.createElement('div');
+      t.className = 'tab' + (i === 0 ? ' active' : '');
+      t.textContent = `${i + 1}. ${m.name || '解法'}`;
+      t.onclick = () => renderMethod(i);
+      tabs.appendChild(t);
+    });
+
+    if (methods.length) renderMethod(0);
+
+    $('sec-result').style.display = 'block';
+    $('btn-copy').onclick = () => {
+      const m = methods[activeIdx];
+      window.api.copy(m ? m.code : '');
+      $('btn-copy').textContent = '已复制 ✓';
+      setTimeout(() => { $('btn-copy').textContent = '复制当前方法代码'; }, 1500);
+    };
+    $('btn-copy-all').onclick = () => {
+      const all = methods.map((m, i) => `// ===== 方法 ${i + 1}: ${m.name} (${m.complexity}) =====\n${m.code}\n`).join('\n');
+      window.api.copy(all);
+      $('btn-copy-all').textContent = '已复制全部 ✓';
+      setTimeout(() => { $('btn-copy-all').textContent = '复制全部方法'; }, 1500);
+    };
+  });
+
+  $('btn-capture').onclick = () => window.api.manualCapture();
+  $('btn-settings').onclick = () => window.api.openSettings();
+  $('btn-hide').onclick = () => window.api.hide();
+  $('btn-close').onclick = () => window.api.close();
+  $('btn-open-prefs').onclick = () => window.api.openScreenPrefs();
+
+  let opacityToastTimer = null;
+  window.api.onOpacityChanged(({ value, percent }) => {
+    const toast = $('opacity-toast');
+    $('opacity-text').textContent = `透明度 ${percent}%`;
+    $('opacity-fill').style.width = percent + '%';
+    toast.classList.add('show');
+    clearTimeout(opacityToastTimer);
+    opacityToastTimer = setTimeout(() => toast.classList.remove('show'), 900);
+  });
+
+  window.addEventListener('DOMContentLoaded', () => {
+    window.api.ready();
+  });
+  if (document.readyState !== 'loading') {
+    window.api.ready();
+  }
+</script>
+</body>
+</html>

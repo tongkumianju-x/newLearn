@@ -1,0 +1,12 @@
+{
+  "id": 53,
+  "titleEn": "Maximum Subarray",
+  "titleCn": "最大子数组和",
+  "keywords": ["maximum subarray", "最大子数组", "largest sum", "contiguous subarray"],
+  "solutions": {
+    "python": "class Solution:\n    def maxSubArray(self, nums: list[int]) -> int:\n        cur = ans = nums[0]\n        for x in nums[1:]:\n            cur = max(x, cur + x)\n            ans = max(ans, cur)\n        return ans",
+    "cpp": "class Solution {\npublic:\n    int maxSubArray(vector<int>& nums) {\n        int cur = nums[0], ans = nums[0];\n        for (int i = 1; i < (int)nums.size(); ++i) {\n            cur = max(nums[i], cur + nums[i]);\n            ans = max(ans, cur);\n        }\n        return ans;\n    }\n};",
+    "go": "func maxSubArray(nums []int) int {\n    cur, ans := nums[0], nums[0]\n    for i := 1; i < len(nums); i++ {\n        if cur+nums[i] < nums[i] { cur = nums[i] } else { cur += nums[i] }\n        if cur > ans { ans = cur }\n    }\n    return ans\n}"
+  },
+  "explanation": "Kadane 算法，DP 状态 cur=以 i 结尾子数组的最大和。时间 O(n)，空间 O(1)。"
+}

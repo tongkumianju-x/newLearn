@@ -1,0 +1,12 @@
+{
+  "id": 121,
+  "titleEn": "Best Time to Buy and Sell Stock",
+  "titleCn": "买卖股票的最佳时机",
+  "keywords": ["best time to buy and sell stock", "买卖股票的最佳时机", "maximize profit", "buy one and sell one"],
+  "solutions": {
+    "python": "class Solution:\n    def maxProfit(self, prices: list[int]) -> int:\n        lo, ans = float('inf'), 0\n        for p in prices:\n            lo = min(lo, p)\n            ans = max(ans, p - lo)\n        return ans",
+    "cpp": "class Solution {\npublic:\n    int maxProfit(vector<int>& prices) {\n        int lo = INT_MAX, ans = 0;\n        for (int p : prices) { lo = min(lo, p); ans = max(ans, p - lo); }\n        return ans;\n    }\n};",
+    "go": "func maxProfit(prices []int) int {\n    lo, ans := math.MaxInt32, 0\n    for _, p := range prices {\n        if p < lo { lo = p }\n        if p-lo > ans { ans = p-lo }\n    }\n    return ans\n}"
+  },
+  "explanation": "一次遍历维护最低买入价，更新当日卖出最大利润。时间 O(n)，空间 O(1)。"
+}

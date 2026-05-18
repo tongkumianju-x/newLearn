@@ -1,0 +1,38 @@
+{
+  "name": "leetcode-snap",
+  "version": "1.0.0",
+  "description": "Mac local LeetCode screenshot solver with fn+F2 hotkey, OCR + LLM dual engine",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "ELECTRON_RUN_AS_NODE= ./node_modules/electron/dist/Electron.app/Contents/MacOS/Electron .",
+    "dev": "ELECTRON_RUN_AS_NODE= ./node_modules/electron/dist/Electron.app/Contents/MacOS/Electron . --enable-logging",
+    "build": "./node_modules/.bin/electron-builder --mac",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "author": "zhanglei",
+  "license": "MIT",
+  "dependencies": {
+    "electron-store": "^8.2.0",
+    "tesseract.js": "^5.1.0",
+    "node-fetch": "^2.7.0"
+  },
+  "devDependencies": {
+    "electron": "^28.2.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.zhanglei.leetsnap",
+    "productName": "LeetSnap",
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": "dmg",
+      "hardenedRuntime": true,
+      "entitlements": "build/entitlements.mac.plist"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json"
+    ]
+  }
+}

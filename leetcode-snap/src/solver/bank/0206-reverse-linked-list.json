@@ -1,0 +1,12 @@
+{
+  "id": 206,
+  "titleEn": "Reverse Linked List",
+  "titleCn": "反转链表",
+  "keywords": ["reverse linked list", "反转链表", "listnode", "singly linked list", "reverse the list", "head of a singly", "return the reversed"],
+  "solutions": {
+    "python": "class Solution:\n    def reverseList(self, head):\n        prev, cur = None, head\n        while cur:\n            nxt = cur.next\n            cur.next = prev\n            prev, cur = cur, nxt\n        return prev",
+    "cpp": "class Solution {\npublic:\n    ListNode* reverseList(ListNode* head) {\n        ListNode *prev = nullptr, *cur = head;\n        while (cur) { auto* nxt = cur->next; cur->next = prev; prev = cur; cur = nxt; }\n        return prev;\n    }\n};",
+    "go": "func reverseList(head *ListNode) *ListNode {\n    var prev *ListNode\n    for cur := head; cur != nil; {\n        nxt := cur.Next\n        cur.Next = prev\n        prev, cur = cur, nxt\n    }\n    return prev\n}"
+  },
+  "explanation": "三指针迭代翻转 next 方向。时间 O(n)，空间 O(1)。"
+}

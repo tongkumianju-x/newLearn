@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>LeetSnap · 交互式演示</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, "PingFang SC", system-ui, sans-serif; background: #0e1014; color: #e6e8eb; min-height: 100vh; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 32px 28px 60px; }
+  h1 { margin: 0 0 6px; font-size: 22px; font-weight: 500; }
+  .sub { color: #8b909a; font-size: 13px; margin-bottom: 28px; }
+  .grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 24px; }
+  @media (max-width: 880px) { .grid { grid-template-columns: 1fr; } }
+  .panel { background: #161a21; border: 0.5px solid #262b35; border-radius: 12px; padding: 22px; }
+  .panel h2 { margin: 0 0 14px; font-size: 14px; font-weight: 500; color: #b8bcc4; text-transform: uppercase; letter-spacing: 0.5px; }
+  .desktop { position: relative; aspect-ratio: 16/10; background: linear-gradient(135deg, #1f3a5f 0%, #2d5a8c 100%); border-radius: 10px; overflow: hidden; border: 0.5px solid #262b35; }
+  .menubar { height: 26px; background: rgba(0,0,0,0.35); display: flex; align-items: center; padding: 0 12px; gap: 14px; font-size: 11px; color: #d0d3d8; backdrop-filter: blur(8px); }
+  .menubar .right { margin-left: auto; display: flex; gap: 12px; align-items: center; }
+  .menubar .ls { background: #4f8cff; color: #fff; padding: 1px 6px; border-radius: 4px; font-weight: 500; cursor: pointer; }
+  .leetcode-mock { position: absolute; left: 32px; top: 60px; right: 32px; bottom: 32px; background: #fff; border-radius: 8px; padding: 18px 22px; color: #222; font-size: 12px; line-height: 1.6; overflow: hidden; }
+  .leetcode-mock h3 { margin: 0 0 10px; font-size: 15px; color: #1a73e8; font-weight: 500; }
+  .leetcode-mock pre { background: #f5f5f5; padding: 8px 10px; border-radius: 4px; font-size: 11px; }
+  .selection { position: absolute; border: 2px solid #4f8cff; background: rgba(79,140,255,0.15); display: none; pointer-events: none; }
+  .selection.on { display: block; animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+
+  .output-frame { position: absolute; right: 16px; top: 36px; width: 320px; max-height: 460px; background: #1a1d23; border: 0.5px solid #2c313a; border-radius: 10px; overflow: hidden; transition: opacity 0.2s, transform 0.2s; }
+  .output-frame.hidden { opacity: 0; transform: translateX(20px) scale(0.96); pointer-events: none; }
+  .of-bar { height: 32px; background: #20242b; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; border-bottom: 0.5px solid #2c313a; font-size: 11px; }
+  .of-bar .l { color: #4f8cff; font-weight: 500; }
+  .of-bar .ctrl { display: flex; gap: 4px; }
+  .of-bar .ctrl button { padding: 2px 8px; font-size: 11px; background: #2c313a; color: #e6e8eb; border: 0.5px solid #3a404a; border-radius: 4px; cursor: pointer; }
+  .of-body { padding: 10px; max-height: 420px; overflow-y: auto; }
+  .of-status { padding: 6px 10px; font-size: 11px; border-radius: 5px; background: #20242b; border: 0.5px solid #2c313a; margin-bottom: 10px; display: flex; gap: 6px; align-items: center; }
+  .spin { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid currentColor; border-top-color: transparent; animation: spin 0.8s linear infinite; }
+  .of-status.done .spin, .of-status.error .spin { display: none; }
+  .of-status.capturing { color: #ffbd2e; }
+  .of-status.ocr { color: #4f8cff; }
+  .of-status.solving { color: #b388ff; }
+  .of-status.done { color: #27c93f; }
+  .of-result h4 { margin: 0 0 6px; font-size: 12px; color: #ffd54f; font-weight: 500; }
+  .badge { display: inline-block; padding: 1px 6px; font-size: 10px; border-radius: 3px; margin-left: 4px; vertical-align: middle; }
+  .badge.local { background: #1e3a2c; color: #6dd897; }
+  .badge.llm { background: #2c2640; color: #b388ff; }
+  .of-code { background: #11141a; border: 0.5px solid #2c313a; border-radius: 5px; padding: 8px 10px; font-family: ui-monospace, monospace; font-size: 10.5px; color: #d8dde5; max-height: 220px; overflow: auto; white-space: pre; }
+  .of-meta { font-size: 10.5px; color: #8b909a; margin-top: 6px; line-height: 1.5; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .ctrl-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .btn { padding: 8px 14px; background: #4f8cff; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; }
+  .btn.ghost { background: transparent; color: #b8bcc4; border: 0.5px solid #2c313a; }
+  .btn:hover { filter: brightness(1.08); }
+  .kbd { display: inline-block; padding: 2px 7px; background: #2c313a; border: 0.5px solid #3a404a; border-radius: 4px; font-family: ui-monospace, monospace; font-size: 11px; }
+  select { padding: 6px 10px; background: #20242b; color: #e6e8eb; border: 0.5px solid #2c313a; border-radius: 6px; font-size: 13px; }
+  .step { display: flex; gap: 10px; margin-bottom: 10px; font-size: 13px; line-height: 1.55; }
+  .step .num { width: 22px; height: 22px; border-radius: 50%; background: #20242b; border: 0.5px solid #2c313a; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #8b909a; flex-shrink: 0; }
+  .step.active .num { background: #4f8cff; color: #fff; border-color: #4f8cff; }
+  .step.done .num { background: #1e3a2c; color: #6dd897; border-color: #2d5a44; }
+  .step.done .num::before { content: '✓'; }
+  .step.done .num span { display: none; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 0.5px solid #262b35; }
+  th { color: #8b909a; font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
+  code.inline { background: #20242b; padding: 1px 6px; border-radius: 3px; font-family: ui-monospace, monospace; font-size: 12px; color: #ffd54f; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>LeetSnap · 本地 LeetCode 截图速答插件</h1>
+    <div class="sub">按 <span class="kbd">fn</span> + <span class="kbd">F2</span> → 框选题目 → OCR → 本地题库 / LLM 双引擎 → 悬浮输出框</div>
+
+    <div class="grid">
+      <div class="panel">
+        <h2>桌面交互演示</h2>
+        <div class="ctrl-row">
+          <button class="btn" id="trigger">模拟按下 fn + F2</button>
+          <select id="problem">
+            <option value="0">两数之和  ·  Two Sum</option>
+            <option value="1">最大子数组和  ·  Maximum Subarray</option>
+            <option value="2">三数之和（题库未命中→走 LLM）</option>
+          </select>
+          <button class="btn ghost" id="reset">重置</button>
+        </div>
+        <div class="desktop">
+          <div class="menubar">
+            <span>&#xF8FF;</span><span>Chrome</span><span>文件</span><span>编辑</span>
+            <div class="right">
+              <span class="ls" id="tray">LS</span>
+              <span>16:42</span>
+            </div>
+          </div>
+          <div class="leetcode-mock" id="problem-card">
+            <h3 id="p-title">1. 两数之和</h3>
+            <p id="p-desc">给定一个整数数组 <b>nums</b> 和一个整数 <b>target</b>，请你在该数组中找出和为目标值的那两个整数，并返回它们的数组下标。</p>
+            <pre id="p-example">输入: nums = [2,7,11,15], target = 9
+输出: [0,1]
+解释: nums[0] + nums[1] == 9</pre>
+          </div>
+          <div class="selection" id="sel"></div>
+
+          <div class="output-frame hidden" id="of">
+            <div class="of-bar">
+              <span class="l">● LeetSnap</span>
+              <div class="ctrl">
+                <button id="of-hide">隐藏</button>
+                <button id="of-close">×</button>
+              </div>
+            </div>
+            <div class="of-body">
+              <div class="of-status" id="of-status">
+                <span class="spin"></span><span id="of-status-text">就绪</span>
+              </div>
+              <div class="of-result" id="of-result" style="display:none;">
+                <h4 id="of-title">—</h4>
+                <span class="badge" id="of-badge">—</span>
+                <div class="of-code" id="of-code"></div>
+                <div class="of-meta" id="of-meta"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top: 12px; font-size: 12px; color: #8b909a;">
+          点击 <b>×</b> / <b>隐藏</b> 都会让输出框消失（托盘仍驻留），点击托盘上的 <span class="ls" style="background:#4f8cff;color:#fff;padding:1px 6px;border-radius:3px;">LS</span> 可重新唤起。
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>实时步骤</h2>
+        <div class="step" id="s1"><div class="num"><span>1</span></div><div><b>注册全局快捷键</b><br><span style="color:#8b909a;font-size:12px;">Electron globalShortcut.register('F2')，托盘进程常驻</span></div></div>
+        <div class="step" id="s2"><div class="num"><span>2</span></div><div><b>调起原生交互截图</b><br><span style="color:#8b909a;font-size:12px;">spawn('screencapture', ['-i','-x', tmpPath])</span></div></div>
+        <div class="step" id="s3"><div class="num"><span>3</span></div><div><b>OCR 离线识别</b><br><span style="color:#8b909a;font-size:12px;">tesseract.js 加载 eng + chi_sim 语言包</span></div></div>
+        <div class="step" id="s4"><div class="num"><span>4</span></div><div><b>双引擎路由</b><br><span style="color:#8b909a;font-size:12px;">本地题库关键词加权 → 阈值不足兜底 LLM</span></div></div>
+        <div class="step" id="s5"><div class="num"><span>5</span></div><div><b>渲染到悬浮输出框</b><br><span style="color:#8b909a;font-size:12px;">无边框 BrowserWindow，alwaysOnTop，可关闭可隐藏</span></div></div>
+
+        <h2 style="margin-top: 24px;">关键文件</h2>
+        <table>
+          <tr><th>路径</th><th>职责</th></tr>
+          <tr><td><code class="inline">src/main.js</code></td><td>主进程：热键、截图、OCR 调度、IPC、托盘</td></tr>
+          <tr><td><code class="inline">src/preload.js</code></td><td>contextBridge 暴露 api（hide/close/copy/storeGet 等）</td></tr>
+          <tr><td><code class="inline">src/renderer/index.html</code></td><td>悬浮输出框 UI</td></tr>
+          <tr><td><code class="inline">src/renderer/settings.html</code></td><td>设置面板（热键、引擎、API Key）</td></tr>
+          <tr><td><code class="inline">src/solver/local.js</code></td><td>本地题库关键词加权匹配</td></tr>
+          <tr><td><code class="inline">src/solver/llm.js</code></td><td>OpenAI / Anthropic 双协议适配</td></tr>
+          <tr><td><code class="inline">src/solver/bank/*.json</code></td><td>题目元数据 + 多语言 AC 代码</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+<script>
+const PROBLEMS = [
+  {
+    title: '1. 两数之和',
+    desc: '给定一个整数数组 <b>nums</b> 和一个整数 <b>target</b>，请你在该数组中找出和为目标值的那两个整数，并返回它们的数组下标。',
+    example: '输入: nums = [2,7,11,15], target = 9\n输出: [0,1]\n解释: nums[0] + nums[1] == 9',
+    ocr: '1. Two Sum\nGiven an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.',
+    engine: 'local',
+    resultTitle: 'LC 1. Two Sum / 两数之和',
+    code: 'class Solution:\n    def twoSum(self, nums, target):\n        seen = {}\n        for i, x in enumerate(nums):\n            if target - x in seen:\n                return [seen[target - x], i]\n            seen[x] = i\n        return []',
+    meta: '语言：Python  ·  本地匹配分：12  ·  哈希表 O(n)/O(n)'
+  },
+  {
+    title: '53. 最大子数组和',
+    desc: '给你一个整数数组 <b>nums</b> ，请你找出一个具有最大和的连续子数组（子数组最少包含一个元素），返回其最大和。',
+    example: '输入: nums = [-2,1,-3,4,-1,2,1,-5,4]\n输出: 6',
+    ocr: '53. Maximum Subarray\nGiven an integer array nums, find the subarray with the largest sum and return its sum.',
+    engine: 'local',
+    resultTitle: 'LC 53. Maximum Subarray / 最大子数组和',
+    code: 'class Solution:\n    def maxSubArray(self, nums):\n        cur = ans = nums[0]\n        for x in nums[1:]:\n            cur = max(x, cur + x)\n            ans = max(ans, cur)\n        return ans',
+    meta: '语言：Python  ·  本地匹配分：10  ·  Kadane DP O(n)/O(1)'
+  },
+  {
+    title: '15. 三数之和',
+    desc: '给你一个整数数组 nums ，判断是否存在三元组使得三数之和为 0。',
+    example: '输入: nums = [-1,0,1,2,-1,-4]\n输出: [[-1,-1,2],[-1,0,1]]',
+    ocr: '15. 3Sum\nGiven an integer array nums, return all the triplets [nums[i], nums[j], nums[k]] such that they sum to 0.',
+    engine: 'llm',
+    resultTitle: 'LC 15. 3Sum / 三数之和',
+    code: 'class Solution:\n    def threeSum(self, nums):\n        nums.sort(); res = []\n        for i in range(len(nums) - 2):\n            if i > 0 and nums[i] == nums[i-1]: continue\n            l, r = i+1, len(nums)-1\n            while l < r:\n                s = nums[i] + nums[l] + nums[r]\n                if s < 0: l += 1\n                elif s > 0: r -= 1\n                else:\n                    res.append([nums[i], nums[l], nums[r]])\n                    while l < r and nums[l] == nums[l+1]: l += 1\n                    while l < r and nums[r] == nums[r-1]: r -= 1\n                    l += 1; r -= 1\n        return res',
+    meta: '语言：Python  ·  来源：gpt-4o-mini  ·  排序+双指针 O(n²)/O(1)'
+  }
+];
+
+const $ = (id) => document.getElementById(id);
+const select = $('problem');
+
+select.onchange = () => {
+  const p = PROBLEMS[+select.value];
+  $('p-title').textContent = p.title;
+  $('p-desc').innerHTML = p.desc;
+  $('p-example').textContent = p.example;
+};
+
+function setStep(idx, state) {
+  const el = $('s' + idx);
+  if (!el) return;
+  el.classList.remove('active', 'done');
+  if (state) el.classList.add(state);
+}
+function resetSteps() { for (let i = 1; i <= 5; i++) setStep(i, ''); }
+
+function setStatus(phase, text) {
+  $('of-status').className = 'of-status ' + phase;
+  $('of-status-text').textContent = text;
+}
+
+function showOf() { $('of').classList.remove('hidden'); }
+function hideOf() { $('of').classList.add('hidden'); }
+
+$('of-hide').onclick = hideOf;
+$('of-close').onclick = hideOf;
+$('tray').onclick = showOf;
+
+$('reset').onclick = () => {
+  resetSteps();
+  $('sel').classList.remove('on');
+  $('of-result').style.display = 'none';
+  setStatus('', '就绪');
+  hideOf();
+};
+
+async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+$('trigger').onclick = async () => {
+  const p = PROBLEMS[+select.value];
+  resetSteps();
+  showOf();
+  $('of-result').style.display = 'none';
+
+  setStep(1, 'done');
+  setStep(2, 'active');
+  setStatus('capturing', '请框选 LeetCode 题目区域…');
+
+  const card = $('problem-card').getBoundingClientRect();
+  const desktop = card; // already absolute inside desktop
+  const sel = $('sel');
+  const parent = $('sel').parentElement.getBoundingClientRect();
+  sel.style.left = (card.left - parent.left + 8) + 'px';
+  sel.style.top = (card.top - parent.top + 8) + 'px';
+  sel.style.width = (card.width - 16) + 'px';
+  sel.style.height = (card.height - 16) + 'px';
+  sel.classList.add('on');
+
+  await sleep(900);
+  sel.classList.remove('on');
+  setStep(2, 'done');
+  setStep(3, 'active');
+  setStatus('ocr', '正在 OCR 识别题目文字…');
+  await sleep(900);
+
+  setStep(3, 'done');
+  setStep(4, 'active');
+  setStatus('solving', p.engine === 'local' ? '本地题库匹配中…' : '本地未命中，走 LLM 兜底…');
+  await sleep(p.engine === 'local' ? 600 : 1200);
+
+  setStep(4, 'done');
+  setStep(5, 'active');
+  $('of-title').textContent = p.resultTitle;
+  $('of-badge').className = 'badge ' + p.engine;
+  $('of-badge').textContent = p.engine === 'local' ? '本地题库' : 'LLM 在线';
+  $('of-code').textContent = p.code;
+  $('of-meta').textContent = p.meta + '  ·  OCR：' + p.ocr.split('\n')[0];
+  $('of-result').style.display = 'block';
+  setStatus('done', '完成（来源：' + p.engine + '）');
+  setStep(5, 'done');
+};
+</script>
+</body>
+</html>

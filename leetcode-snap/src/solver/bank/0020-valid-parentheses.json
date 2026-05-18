@@ -1,0 +1,12 @@
+{
+  "id": 20,
+  "titleEn": "Valid Parentheses",
+  "titleCn": "有效的括号",
+  "keywords": ["valid parentheses", "有效的括号", "open brackets", "closed brackets must be closed"],
+  "solutions": {
+    "python": "class Solution:\n    def isValid(self, s: str) -> bool:\n        pair = {')': '(', ']': '[', '}': '{'}\n        st = []\n        for c in s:\n            if c in pair:\n                if not st or st.pop() != pair[c]: return False\n            else:\n                st.append(c)\n        return not st",
+    "cpp": "class Solution {\npublic:\n    bool isValid(string s) {\n        stack<char> st;\n        for (char c : s) {\n            if (c == '(' || c == '[' || c == '{') st.push(c);\n            else {\n                if (st.empty()) return false;\n                char t = st.top(); st.pop();\n                if ((c==')'&&t!='(')||(c==']'&&t!='[')||(c=='}'&&t!='{')) return false;\n            }\n        }\n        return st.empty();\n    }\n};",
+    "go": "func isValid(s string) bool {\n    st := []rune{}\n    pair := map[rune]rune{')':'(', ']':'[', '}':'{'}\n    for _, c := range s {\n        if v, ok := pair[c]; ok {\n            if len(st) == 0 || st[len(st)-1] != v { return false }\n            st = st[:len(st)-1]\n        } else { st = append(st, c) }\n    }\n    return len(st) == 0\n}"
+  },
+  "explanation": "经典栈题：左括号入栈，右括号检查栈顶匹配。时间 O(n)，空间 O(n)。"
+}

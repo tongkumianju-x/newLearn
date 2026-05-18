@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>LeetSnap 设置</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 24px; font-family: -apple-system, "PingFang SC", system-ui, sans-serif; background: #fff; color: #222; font-size: 13px; }
+  h2 { font-size: 15px; font-weight: 500; margin: 0 0 16px; }
+  .row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+  label { font-size: 12px; color: #555; }
+  input, select { padding: 7px 10px; border: 0.5px solid #d0d3d8; border-radius: 6px; font-size: 13px; font-family: inherit; }
+  input:focus, select:focus { outline: none; border-color: #4f8cff; }
+  .row.inline { flex-direction: row; align-items: center; gap: 8px; }
+  .hint { font-size: 11px; color: #888; margin-top: 4px; }
+  .actions { display: flex; gap: 8px; margin-top: 18px; position: sticky; bottom: 0; background: #fff; padding-top: 12px; border-top: 0.5px solid #eee; }
+  .btn { padding: 7px 14px; border: 0.5px solid #d0d3d8; border-radius: 6px; background: #f6f7f9; cursor: pointer; font-size: 13px; }
+  .btn.primary { background: #4f8cff; color: #fff; border-color: #4f8cff; }
+  .btn:hover { filter: brightness(0.97); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .preset-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-bottom: 8px; }
+  .preset { padding: 8px 10px; background: #f6f7f9; border: 0.5px solid #d0d3d8; border-radius: 6px; cursor: pointer; font-size: 12px; text-align: center; }
+  .preset:hover { background: #e6f1fb; border-color: #4f8cff; }
+  .preset b { font-size: 13px; display: block; margin-bottom: 2px; }
+  .preset span { color: #888; font-size: 11px; }
+</style>
+</head>
+<body>
+  <h2>LeetSnap 设置</h2>
+
+  <div class="row">
+    <label>全局快捷键</label>
+    <input id="hotkey" placeholder="例如 F2 或 CommandOrControl+Shift+L">
+    <div class="hint">默认 F2（Mac 顶行 F2 默认即 fn+F2）</div>
+  </div>
+
+  <div class="grid">
+    <div class="row">
+      <label>提高透明度快捷键</label>
+      <input id="hotkeyOpacityUp" placeholder="Alt+1">
+      <div class="hint">默认 Alt+1（即 ⌥1）。注：macOS 不支持单 fn 修饰，需带 Cmd/Alt/Shift</div>
+    </div>
+    <div class="row">
+      <label>降低透明度快捷键</label>
+      <input id="hotkeyOpacityDown" placeholder="Alt+2">
+      <div class="hint">默认 Alt+2（即 ⌥2）。可选 CommandOrControl+[ / ]</div>
+    </div>
+  </div>
+
+  <div class="row">
+    <label>显示/隐藏输出窗 快捷键</label>
+    <input id="hotkeyToggle" placeholder="Alt+3">
+    <div class="hint">默认 Alt+3（即 ⌥3）。一键开关输出窗，无需手动点 × 或托盘菜单</div>
+  </div>
+
+  <div class="grid">
+    <div class="row">
+      <label>解题语言</label>
+      <select id="language">
+        <option value="python">Python</option>
+        <option value="cpp">C++</option>
+        <option value="java">Java</option>
+        <option value="go">Go</option>
+        <option value="javascript">JavaScript</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>引擎策略</label>
+      <select id="preferLocalSolver">
+        <option value="false">优先 LLM（任何题都问 API）</option>
+        <option value="true">优先本地题库（命中即返回，省 token）</option>
+      </select>
+    </div>
+  </div>
+
+  <h2 style="margin-top: 18px;">外接 LLM 服务商</h2>
+
+  <label style="font-size:12px;color:#555; margin-bottom:6px; display:block;">点击预设一键填充 Endpoint 和模型，然后只需填 API Key：</label>
+  <div class="preset-grid">
+    <div class="preset" data-provider="openai" data-endpoint="https://api.deepseek.com/v1/chat/completions" data-model="deepseek-chat">
+      <b>DeepSeek</b><span>¥1/百万 token</span>
+    </div>
+    <div class="preset" data-provider="openai" data-endpoint="https://open.bigmodel.cn/api/paas/v4/chat/completions" data-model="glm-4-flash">
+      <b>智谱 GLM</b><span>免费额度</span>
+    </div>
+    <div class="preset" data-provider="openai" data-endpoint="https://api.moonshot.cn/v1/chat/completions" data-model="moonshot-v1-8k">
+      <b>Moonshot</b><span>国内速度快</span>
+    </div>
+    <div class="preset" data-provider="openai" data-endpoint="https://api.hunyuan.cloud.tencent.com/v1/chat/completions" data-model="hunyuan-turbo">
+      <b>腾讯混元</b><span>公司账号</span>
+    </div>
+    <div class="preset" data-provider="openai" data-endpoint="https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions" data-model="qwen-turbo">
+      <b>通义千问</b><span>阿里云</span>
+    </div>
+    <div class="preset" data-provider="openai" data-endpoint="https://api.siliconflow.cn/v1/chat/completions" data-model="deepseek-ai/DeepSeek-V2.5">
+      <b>SiliconFlow</b><span>免费 V2.5</span>
+    </div>
+    <div class="preset" data-provider="openai" data-endpoint="https://api.openai.com/v1/chat/completions" data-model="gpt-4o-mini">
+      <b>OpenAI</b><span>需海外网络</span>
+    </div>
+    <div class="preset" data-provider="anthropic" data-endpoint="https://api.anthropic.com/v1/messages" data-model="claude-3-5-sonnet-latest">
+      <b>Claude</b><span>Anthropic</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="row">
+      <label>协议</label>
+      <select id="llmProvider">
+        <option value="openai">OpenAI 兼容协议</option>
+        <option value="anthropic">Anthropic 协议</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>模型 ID</label>
+      <input id="llmModel" placeholder="deepseek-chat / glm-4-flash / gpt-4o-mini">
+    </div>
+  </div>
+
+  <div class="row">
+    <label>API Endpoint</label>
+    <input id="llmEndpoint" placeholder="https://api.deepseek.com/v1/chat/completions">
+  </div>
+
+  <div class="row">
+    <label>API Key</label>
+    <input id="llmApiKey" type="password" placeholder="sk-xxxxxx">
+    <div class="hint">仅保存到本地 ~/Library/Application Support/leetcode-snap/config.json，不会上报</div>
+  </div>
+
+  <div class="actions">
+    <button class="btn primary" id="save">保存并应用</button>
+    <button class="btn" id="test">测试连接</button>
+    <button class="btn" id="cancel">关闭</button>
+    <span id="msg" style="margin-left:12px; font-size:12px; color:#27c93f; align-self:center;"></span>
+  </div>
+
+<script>
+  const fields = ['hotkey', 'hotkeyOpacityUp', 'hotkeyOpacityDown', 'hotkeyToggle', 'language', 'preferLocalSolver', 'llmProvider', 'llmModel', 'llmEndpoint', 'llmApiKey'];
+
+  async function load() {
+    const all = await window.api.storeAll();
+    for (const f of fields) {
+      const el = document.getElementById(f);
+      if (!el) continue;
+      el.value = String(all[f] ?? '');
+    }
+  }
+  load();
+
+  document.querySelectorAll('.preset').forEach(el => {
+    el.onclick = () => {
+      document.getElementById('llmProvider').value = el.dataset.provider;
+      document.getElementById('llmEndpoint').value = el.dataset.endpoint;
+      document.getElementById('llmModel').value = el.dataset.model;
+      document.getElementById('msg').textContent = '已填充 ' + el.querySelector('b').textContent + '，请填入对应 API Key';
+      document.getElementById('msg').style.color = '#1a73e8';
+    };
+  });
+
+  document.getElementById('save').onclick = async () => {
+    for (const f of fields) {
+      let v = document.getElementById(f).value;
+      if (f === 'preferLocalSolver') v = (v === 'true');
+      await window.api.storeSet(f, v);
+    }
+    window.api.reloadHotkey();
+    const msg = document.getElementById('msg');
+    msg.textContent = '✓ 已保存，按 fn+F2 即可截图解题';
+    msg.style.color = '#27c93f';
+    setTimeout(() => { msg.textContent = ''; }, 3000);
+  };
+
+  document.getElementById('test').onclick = async () => {
+    const msg = document.getElementById('msg');
+    msg.textContent = '测试中…';
+    msg.style.color = '#1a73e8';
+    const endpoint = document.getElementById('llmEndpoint').value;
+    const apiKey = document.getElementById('llmApiKey').value;
+    const model = document.getElementById('llmModel').value;
+    const provider = document.getElementById('llmProvider').value;
+    if (!apiKey) { msg.textContent = '请先填 API Key'; msg.style.color = '#ff5f56'; return; }
+    try {
+      const headers = provider === 'anthropic'
+        ? { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' }
+        : { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' };
+      const body = provider === 'anthropic'
+        ? { model, max_tokens: 16, messages: [{ role: 'user', content: 'ping' }] }
+        : { model, max_tokens: 16, messages: [{ role: 'user', content: 'ping' }] };
+      const r = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(body) });
+      if (r.ok) {
+        msg.textContent = '✓ 连接成功（' + r.status + '）';
+        msg.style.color = '#27c93f';
+      } else {
+        const text = await r.text();
+        msg.textContent = '✗ ' + r.status + ': ' + text.slice(0, 80);
+        msg.style.color = '#ff5f56';
+      }
+    } catch (e) {
+      msg.textContent = '✗ ' + e.message;
+      msg.style.color = '#ff5f56';
+    }
+  };
+
+  document.getElementById('cancel').onclick = () => window.close();
+</script>
+</body>
+</html>
