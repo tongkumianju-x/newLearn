@@ -53,6 +53,12 @@
     <div class="hint">默认 Alt+3（即 ⌥3）。一键开关输出窗，无需手动点 × 或托盘菜单</div>
   </div>
 
+  <div class="row">
+    <label>退出程序 快捷键</label>
+    <input id="hotkeyQuit" placeholder="Alt+Q">
+    <div class="hint">默认 Alt+Q（即 ⌥Q）。需 1.5 秒内按两次才会真正退出，防止误触</div>
+  </div>
+
   <div class="grid">
     <div class="row">
       <label>解题语言</label>
@@ -128,6 +134,12 @@
     <div class="hint">仅保存到本地 ~/Library/Application Support/leetcode-snap/config.json，不会上报</div>
   </div>
 
+  <div class="row">
+    <label>LLM 超时时间（毫秒）</label>
+    <input id="llmTimeoutMs" placeholder="300000" type="number" min="30000" max="1800000" step="30000">
+    <div class="hint">默认 300000（5 分钟）。慢模型可调大，最长 1800000（30 分钟）。最低 30000（30 秒）</div>
+  </div>
+
   <div class="actions">
     <button class="btn primary" id="save">保存并应用</button>
     <button class="btn" id="test">测试连接</button>
@@ -136,7 +148,7 @@
   </div>
 
 <script>
-  const fields = ['hotkey', 'hotkeyOpacityUp', 'hotkeyOpacityDown', 'hotkeyToggle', 'language', 'preferLocalSolver', 'llmProvider', 'llmModel', 'llmEndpoint', 'llmApiKey'];
+  const fields = ['hotkey', 'hotkeyOpacityUp', 'hotkeyOpacityDown', 'hotkeyToggle', 'hotkeyQuit', 'language', 'preferLocalSolver', 'llmProvider', 'llmModel', 'llmEndpoint', 'llmApiKey', 'llmTimeoutMs'];
 
   async function load() {
     const all = await window.api.storeAll();
@@ -162,6 +174,7 @@
     for (const f of fields) {
       let v = document.getElementById(f).value;
       if (f === 'preferLocalSolver') v = (v === 'true');
+      if (f === 'llmTimeoutMs') v = Math.max(30000, Math.min(1800000, Number(v) || 300000));
       await window.api.storeSet(f, v);
     }
     window.api.reloadHotkey();

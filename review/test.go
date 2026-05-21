@@ -1,63 +1,68 @@
 package main
 
 import (
-	"fmt"
-	"math/rand"
-	"sort"
-	"time"
+    "fmt"
+    "math"
 )
 
 func main() {
-	testList := rankListGet(100)
-	var merageKList func(int, int) []int
-	merageKList = func(left, right int) []int {
-		if left == right {
-			return testList[left]
-		}
-		mid := (left + right) / 2
-		leftList := merageKList(left, mid)
-		rightList := merageKList(mid+1, right)
-		return merageList(leftList, rightList)
-	}
-	result := merageKList(0, len(testList)-1)
-	fmt.Print(result)
+
+    a := "ADOBECODEBANC"
+    t := "ABC"
+    fmt.Print(piper(a, t))
+
 }
 
-func rankListGet(num int) [][]int {
-	var nums [][]int
-	rands := rand.New(rand.NewSource(time.Now().UnixNano()))
-	for i := 1; i <= num; i++ {
-		var numj []int
-		for j := 0; j < 100; j++ {
-			numj = append(numj, rands.Intn(100))
-		}
-		sort.Ints(numj)
-		nums = append(nums, numj)
-	}
-	return nums
+func piper(s string, t string) string {
+    tMap := make(map[byte]int)
+    for i := 0; i < len(t); i++ {
+        tMap[t[i]]++
+    }
+    tag := 0
+    first := 0
+    resultLen := math.MaxInt
+    var result string
+    for i := 0; i < len(s); i++ {
+        v, ok := tMap[s[i]]
+        if ok && v > 0 {
+            tMap[s[i]]--
+            tag++
+        } else if ok && v == 0 {
+            for ; s[first] != s[i]; first++ {
+                _, ok2 := tMap[s[first]]
+                if ok2 {
+                    tMap[s[first]]++
+                    tag--
+                }
+            }
+            if s[first] == s[i] {
+                first++
+                for ; s[first] != s[i]; first++ {
+                    _, ok2 := tMap[s[first]]
+                    if ok2 {
+                        break
+                    }
+                }
+            }
+        } else {
+            continue
+        }
+
+        if tag == len(t) {
+            if i-first+1 < resultLen {
+                result = s[first : i+1]
+                resultLen = i - first + 1
+            }
+        }
+
+    }
+
+    return result
 }
 
-//func merageKList(left [][]int,right [][]int) []int {
+//func min(x, y int) int {
+//    if x > y {
+//        return y
+//    }
+//    return x
 //}
-
-func merageList(a []int, b []int) []int {
-
-	var c []int
-	i, j := 0, 0
-	for i < len(a) && j < len(b) {
-		if a[i] > b[j] {
-			c = append(c, b[j])
-			j++
-		} else {
-			c = append(c, a[i])
-			i++
-		}
-	}
-	if i < len(a) {
-		c = append(c, a[i:]...)
-	}
-	if j < len(b) {
-		c = append(c, b[j:]...)
-	}
-	return c
-}

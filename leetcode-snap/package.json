@@ -6,7 +6,8 @@
   "scripts": {
     "start": "ELECTRON_RUN_AS_NODE= ./node_modules/electron/dist/Electron.app/Contents/MacOS/Electron .",
     "dev": "ELECTRON_RUN_AS_NODE= ./node_modules/electron/dist/Electron.app/Contents/MacOS/Electron . --enable-logging",
-    "build": "./node_modules/.bin/electron-builder --mac",
+    "build": "./node_modules/.bin/electron-builder --mac --dir",
+    "build:dmg": "./node_modules/.bin/electron-builder --mac --dmg",
     "postinstall": "electron-builder install-app-deps"
   },
   "author": "zhanglei",
@@ -25,9 +26,15 @@
     "productName": "LeetSnap",
     "mac": {
       "category": "public.app-category.developer-tools",
-      "target": "dmg",
-      "hardenedRuntime": true,
-      "entitlements": "build/entitlements.mac.plist"
+      "target": "dir",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "identity": null,
+      "entitlements": "build/entitlements.mac.plist",
+      "extendInfo": {
+        "LSUIElement": true,
+        "NSScreenCaptureUsageDescription": "LeetSnap 需要屏幕录制权限来截取 LeetCode 题目并做 OCR 解析。"
+      }
     },
     "files": [
       "src/**/*",

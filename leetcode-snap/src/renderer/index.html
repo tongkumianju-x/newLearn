@@ -92,7 +92,7 @@
       </div>
 
       <div class="section" id="sec-ocr" style="display:none;">
-        <h3>OCR 识别文本</h3>
+        <h3>OCR 识别文本 <span id="ocr-stats" style="font-size:11px;color:#6dd897;font-weight:400;margin-left:6px;"></span></h3>
         <div class="card"><div class="ocr-text" id="ocr-text"></div></div>
       </div>
 
@@ -161,6 +161,10 @@
     $('sec-ocr').style.display = 'block';
   });
 
+  window.api.onOcrStats(({ rawLen, cleanLen, reduced }) => {
+    $('ocr-stats').textContent = `已清洗：${rawLen} → ${cleanLen} 字符（压缩 ${reduced}%）`;
+  });
+
   window.api.onResult((res) => {
     $('result-title').textContent = res.title || 'LeetCode 题解';
     $('result-meta').textContent = `语言：${res.language || '-'}` + (res.matchScore ? `  ·  本地匹配分：${res.matchScore}` : '') + `  ·  共 ${(res.methods || []).length} 种解法`;
@@ -219,9 +223,28 @@
     const toast = $('opacity-toast');
     $('opacity-text').textContent = `透明度 ${percent}%`;
     $('opacity-fill').style.width = percent + '%';
+    $('opacity-fill').style.background = '#4f8cff';
     toast.classList.add('show');
     clearTimeout(opacityToastTimer);
     opacityToastTimer = setTimeout(() => toast.classList.remove('show'), 900);
+  });
+
+  let quitToastTimer = null;
+  window.api.onQuitPrompt(({ message }) => {
+    const toast = $('opacity-toast');
+    $('opacity-text').textContent = '再按一次退出  ⌥Q';
+    $('opacity-fill').style.width = '100%';
+    $('opacity-fill').style.background = '#ff5f56';
+    toast.classList.add('show');
+    clearTimeout(quitToastTimer);
+    quitToastTimer = setTimeout(() => {
+      toast.classList.remove('show');
+      $('opacity-fill').style.background = '#4f8cff';
+    }, 1500);
+  });
+  window.api.onQuitPromptCancel(() => {
+    $('opacity-toast').classList.remove('show');
+    $('opacity-fill').style.background = '#4f8cff';
   });
 
   window.addEventListener('DOMContentLoaded', () => {

@@ -11,11 +11,13 @@ const store = new Store({
     hotkeyOpacityUp: 'Alt+1',
     hotkeyOpacityDown: 'Alt+2',
     hotkeyToggle: 'Alt+3',
+    hotkeyQuit: 'Alt+Q',
     opacity: 1.0,
     llmProvider: 'openai',
     llmApiKey: '',
     llmEndpoint: 'https://api.deepseek.com/v1/chat/completions',
     llmModel: 'deepseek-chat',
+    llmTimeoutMs: 300000,
     preferLocalSolver: false,
     language: 'go'
   }
@@ -24,6 +26,10 @@ const store = new Store({
 const OPACITY_MIN = 0.25;
 const OPACITY_MAX = 1.0;
 const OPACITY_STEP = 0.1;
+const QUIT_CONFIRM_MS = 1500;
+
+let quitPending = false;
+let quitTimer = null;
 
 let outputWin = null;
 let settingsWin = null;
@@ -96,6 +102,25 @@ function toggleOutput() {
     win.show();
     win.focus();
   }
+}
+
+function requestQuit() {
+  if (quitPending) {
+    clearTimeout(quitTimer);
+    globalShortcut.unregisterAll();
+    app.exit(0);
+    return;
+  }
+  quitPending = true;
+  showOutput();
+  safeSend('quit-prompt', { message: '再按一次退出快捷键确认退出 LeetSnap' });
+  try {
+    new Notification({ title: 'LeetSnap', body: '再按一次退出快捷键确认退出' }).show();
+  } catch (_) {}
+  quitTimer = setTimeout(() => {
+    quitPending = false;
+    safeSend('quit-prompt-cancel', {});
+  }, QUIT_CONFIRM_MS);
 }
 
 function clampOpacity(v) {
@@ -202,6 +227,53 @@ async function runOcr(buffer) {
   }
 }
 
+// 清洗 OCR 文本：去除空格噪声、压成单行完整文本喂给 LLM
+function cleanOcrText(raw) {
+  if (!raw) return '';
+  let s = raw;
+
+  // 1. 去 BOM / 零宽字符 / 软连字符
+  s = s.replace(/[\u200B-\u200F\u202A-\u202E\u2060-\u206F\uFEFF\u00AD]/g, '');
+
+  // 2. 全角空格 → 半角
+  s = s.replace(/\u3000/g, ' ');
+
+  // 3. 英文连字符回行 "abc-\ndef" → "abcdef"
+  s = s.replace(/-\n/g, '');
+
+  // 4. 所有换行 → 空格（LLM 只需要完整文本，不依赖换行结构）
+  s = s.replace(/[\r\n]+/g, ' ');
+
+  // 5. CJK 字符集合：CJK 统一汉字 + 假名 + CJK 符号标点（。，：；！？「」『』《》〈〉【】等）+ 全角 ASCII（含 ， 。 ！ ？ 等）
+  //    \u3000-\u303F: CJK 符号和标点
+  //    \uFF00-\uFFEF: 半/全角 ASCII（含全角逗号 ， 全角句号 。 等）
+  const CJK = '\u4E00-\u9FFF\u3040-\u309F\u30A0-\u30FF\u3000-\u303F\uFF00-\uFFEF';
+
+  // 多次循环清洗，直到收敛（每轮：去 CJK 间空格 → 中英间留单空格 → 合并多空格）
+  const cjkSpaceRe = new RegExp(`([${CJK}])\\s+([${CJK}])`, 'g');
+  const cjkToAsciiRe = new RegExp(`([${CJK}])\\s*([A-Za-z0-9])`, 'g');
+  const asciiToCjkRe = new RegExp(`([A-Za-z0-9])\\s*([${CJK}])`, 'g');
+
+  for (let i = 0; i < 5; i++) {
+    const before = s;
+
+    // 6. CJK 字符（含中文标点）之间的空格全部删除
+    let prev;
+    do { prev = s; s = s.replace(cjkSpaceRe, '$1$2'); } while (s !== prev);
+
+    // 7. 中文与英文/数字之间保留单空格
+    s = s.replace(cjkToAsciiRe, '$1 $2');
+    s = s.replace(asciiToCjkRe, '$1 $2');
+
+    // 8. 多个空格 → 单空格
+    s = s.replace(/[ \t]{2,}/g, ' ');
+
+    if (s === before) break;
+  }
+
+  return s.trim();
+}
+
 const localSolver = require('./solver/local');
 const llmSolver = require('./solver/llm');
 
@@ -222,7 +294,14 @@ async function solve(text) {
         endpoint: store.get('llmEndpoint'),
         model: store.get('llmModel'),
         apiKey,
-        language: store.get('language')
+        language: store.get('language'),
+        timeoutMs: Number(store.get('llmTimeoutMs')) || 300000,
+        onProgress: ({ elapsed, remain, timeoutSec }) => {
+          safeSend('status', {
+            phase: 'solving',
+            message: `正在调用 LLM 生成 AC 代码…已等待 ${elapsed}s / 上限 ${timeoutSec}s（剩余 ${remain}s）`
+          });
+        }
       });
       llmRes.engine = 'llm';
       return llmRes;
@@ -284,14 +363,19 @@ async function handleCapture() {
     safeSend('status', { phase: 'ocr', message: '截图完成，正在 OCR 识别…' });
     safeSend('preview', `data:image/png;base64,${buf.toString('base64')}`);
 
-    const text = await runOcr(buf);
+    const rawText = await runOcr(buf);
+    const text = cleanOcrText(rawText);
+    const rawLen = (rawText || '').length;
+    const cleanLen = text.length;
+    const reduced = rawLen > 0 ? Math.round((1 - cleanLen / rawLen) * 100) : 0;
     safeSend('ocr-text', text || '(未识别到任何文字)');
+    safeSend('ocr-stats', { rawLen, cleanLen, reduced });
 
-    if (!text || text.trim().length < 5) {
+    if (!text || text.length < 5) {
       throw new Error('OCR 结果为空，可能截图内容无文字或权限不足只截到桌面');
     }
 
-    safeSend('status', { phase: 'solving', message: '正在生成 AC 代码…' });
+    safeSend('status', { phase: 'solving', message: `正在生成 AC 代码…（已清洗 OCR：${rawLen} → ${cleanLen} 字符，压缩 ${reduced}%）` });
     const result = await solve(text);
 
     safeSend('result', result);
@@ -329,10 +413,14 @@ function registerHotkey() {
   const okToggle = globalShortcut.register(toggleKey, toggleOutput);
   console.log(`[hotkey] 显示/隐藏切换 ${toggleKey}: ${okToggle ? '✓' : '✗'}`);
 
-  if (!okUp || !okDown || !okToggle) {
+  const quitKey = store.get('hotkeyQuit') || 'Alt+Q';
+  const okQuit = globalShortcut.register(quitKey, requestQuit);
+  console.log(`[hotkey] 退出程序 ${quitKey}: ${okQuit ? '✓' : '✗'}`);
+
+  if (!okUp || !okDown || !okToggle || !okQuit) {
     new Notification({
       title: 'LeetSnap 部分快捷键注册失败',
-      body: `${!okUp ? upKey + ' ' : ''}${!okDown ? downKey + ' ' : ''}${!okToggle ? toggleKey + ' ' : ''}被占用，请到设置改成其它组合键。`
+      body: `${!okUp ? upKey + ' ' : ''}${!okDown ? downKey + ' ' : ''}${!okToggle ? toggleKey + ' ' : ''}${!okQuit ? quitKey + ' ' : ''}被占用，请到设置改成其它组合键。`
     }).show();
   }
 
@@ -361,6 +449,7 @@ async function rebuildTrayMenu() {
   const upKey = store.get('hotkeyOpacityUp') || 'Alt+1';
   const downKey = store.get('hotkeyOpacityDown') || 'Alt+2';
   const toggleKey = store.get('hotkeyToggle') || 'Alt+3';
+  const quitKey = store.get('hotkeyQuit') || 'Alt+Q';
 
   const menu = Menu.buildFromTemplate([
     { label: `立即截图解题  (${captureKey})`, click: handleCapture },
@@ -376,7 +465,7 @@ async function rebuildTrayMenu() {
     { label: permLabel, click: openScreenRecordingPrefs },
     { label: '设置…', click: () => createSettingsWindow() },
     { type: 'separator' },
-    { label: '退出 LeetSnap', click: () => { app.exit(0); } }
+    { label: `退出 LeetSnap  (${quitKey})`, click: () => { globalShortcut.unregisterAll(); app.exit(0); } }
   ]);
   tray.setContextMenu(menu);
 }
